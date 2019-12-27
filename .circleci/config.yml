@@ -9,7 +9,7 @@ jobs:
 
       - run:
           name: Install extentions
-          commend: |
+          command: |
               sudo apt update && sudo apt install zlib1g-dev libsqlite3-dev
               sudo docker-php-ext-install zip
 
@@ -21,7 +21,7 @@ jobs:
             - v1-dependencies-
       - run:
           name: Composer install
-          commend: composer install -n --prefer-dist
+          command: composer install -n --prefer-dist
       - save_cache:
           key: composer-v1-{{ checksum "composer.lock" }}
           paths:
@@ -64,23 +64,23 @@ jobs:
           name: Tests
           command: ./vendor/bin/phpunit
 
-#  deploy:
-#    machine:
-#      enabled: true
-#    steps:
-#      - run:
-#          name: Deploy Over SSH
-#          command: |
-#            ssh $SSH_USER@$SSH_HOST "<remote deploy command>"
+  deploy:
+    machine:
+      enabled: true
+    steps:
+      - run:
+          name: Deploy Over SSH
+          command: |
+            ssh $SSH_USER@$SSH_HOST "ls -la"
 
 workflows:
   version: 2
   build-and-deploy:
     jobs:
       - build
-#      - deploy:
-#          requires:
-#            - build
-#          filters:
-#            branches:
-#              only: master
+      - deploy:
+          requires:
+            - build
+          filters:
+            branches:
+              only: master

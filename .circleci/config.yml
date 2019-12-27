@@ -1,0 +1,86 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/php:7.3-stretch-node-browsers
+
+    steps:
+      - checkout
+
+      - run:
+          name: Install extentions
+          commend: |
+              sudo apt update && sudo apt install zlib1g-dev libsqlite3-dev
+              sudo docker-php-ext-install zip
+
+      # composer cache
+
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "composer.lock" }}
+            - v1-dependencies-
+      - run:
+          name: Composer install
+          commend: composer install -n --prefer-dist
+      - save_cache:
+          key: composer-v1-{{ checksum "composer.lock" }}
+          paths:
+            - vendor
+
+      - run:
+          name: Laravel Initialization
+          command: |
+            cp .env.circleci .env
+            php artisan key:generate
+            mkdir -p storage/framework/views
+            mkdir -p storage/framework/cache
+            php artisan cache:clear
+            php artisan config:clear
+
+      # node cache
+
+      - restore_cache:
+          keys:
+            - node-v4-{{ checksum "package.json" }}
+            - node-v4-
+      - run:
+          name: Npm install
+          command: npm install
+      - save_cache:
+          key: node-v4-{{ checksum "package.json" }}
+          paths:
+            - node_modules
+            - ~/.yarn
+
+      # prepare the database
+      - run:
+          name: Prepare testing database
+          command: |
+            touch database/testing.sqlite
+            php artisan migrate --env=testing --database=sqlite --force
+
+      # run tests with phpunit
+      - run:
+          name: Tests
+          command: ./vendor/bin/phpunit
+
+#  deploy:
+#    machine:
+#      enabled: true
+#    steps:
+#      - run:
+#          name: Deploy Over SSH
+#          command: |
+#            ssh $SSH_USER@$SSH_HOST "<remote deploy command>"
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build
+#      - deploy:
+#          requires:
+#            - build
+#          filters:
+#            branches:
+#              only: master

@@ -69,9 +69,15 @@ jobs:
       enabled: true
     steps:
       - run:
-          name: Deploy Over SSH
+          name: Download deployer
           command: |
-            ssh $SSH_USER@$SSH_HOST "ls -la"
+            curl -LO https://deployer.org/deployer.phar
+            sudo mv deployer.phar /usr/local/bin/dep
+            chmod +x /usr/local/bin/dep
+#      - run:
+#          name: Deploy Over SSH
+#          command: |
+#            ssh $SSH_USER@$SSH_HOST "ls -la"
 
 workflows:
   version: 2
@@ -81,6 +87,6 @@ workflows:
       - deploy:
           requires:
             - build
-          filters:
-            branches:
-              only: master
+#          filters:
+#            branches:
+#              only: master

@@ -1,6 +1,7 @@
 version: 2
 jobs:
   build:
+    working_directory: ~/repo
     docker:
       - image: circleci/php:7.3-stretch-node-browsers
 
@@ -39,18 +40,18 @@ jobs:
 
       # node cache
 
-      - restore_cache:
-          keys:
-            - node-v4-{{ checksum "package.json" }}
-            - node-v4-
-      - run:
-          name: Npm install
-          command: npm install
-      - save_cache:
-          key: node-v4-{{ checksum "package.json" }}
-          paths:
-            - node_modules
-            - ~/.yarn
+#      - restore_cache:
+#          keys:
+#            - node-v4-{{ checksum "package.json" }}
+#            - node-v4-
+#      - run:
+#          name: Npm install
+#          command: npm install
+#      - save_cache:
+#          key: node-v4-{{ checksum "package.json" }}
+#          paths:
+#            - node_modules
+#            - ~/.yarn
 
       # prepare the database
       - run:
@@ -64,16 +65,41 @@ jobs:
           name: Tests
           command: ./vendor/bin/phpunit
 
-  deploy:
-    machine:
-      enabled: true
-    steps:
+#  deploy:
+#    machine:
+#      enabled: true
+#    steps:
+#      - checkout
+
+#      - run:
+#          name: Install extentions
+#          command: |
+#            sudo apt update && sudo apt install zlib1g-dev libsqlite3-dev
+#            sudo docker-php-ext-install zip
+
       - run:
           name: Download deployer
           command: |
             curl -LO https://deployer.org/deployer.phar
             sudo mv deployer.phar /usr/local/bin/dep
             chmod +x /usr/local/bin/dep
+
+      - run:
+          name: Decrypt credentials
+          command: ./deployment/decrypt_credentials.sh
+
+      - run:
+          name: Deployer test
+          command: dep test
+
+      - run:
+          name: Deployer pwd
+          command: dep pwd
+
+#      - run:
+#          name: Deployer deploy
+#          command: dep deploy
+
 #      - run:
 #          name: Deploy Over SSH
 #          command: |
@@ -84,9 +110,9 @@ workflows:
   build-and-deploy:
     jobs:
       - build
-      - deploy:
-          requires:
-            - build
+#      - deploy:
+#          requires:
+#            - build
 #          filters:
 #            branches:
 #              only: master

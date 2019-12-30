@@ -1,0 +1,7 @@
+Host 2up
+     HostName 185.178.46.12
+     User mtish
+     IdentityFile decrypted_credentials/id_rsa_deployment
+     ForwardAgent yes
+     StrictHostKeyChecking no
+     UserKnownHostsFile=/dev/null

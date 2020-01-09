@@ -7,10 +7,10 @@ require 'recipe/laravel.php';
 set('application', 'circletest');
 
 // Project repository
-set('repository', 'git@github.com:tishmaria90/circleci.git');
+//set('repository', 'git@github.com:tishmaria90/circleci.git');
 
 // [Optional] Allocate tty for git clone. Default value is false.
-set('git_tty', true);
+//set('git_tty', true);
 
 set('keep_releases', 2);
 
@@ -27,30 +27,55 @@ add('writable_dirs', []);
 
 
 // Hosts
-//localhost();
 host('2up')
     ->configFile('deployment/ssh_config')
-//    ->user('mtish')
-//    ->identityFile('deployment/decrypted_credentials/id_rsa_deployment')
-//    ->forwardAgent(true)
-//    ->multiplexing(true)
-//    ->addSshOption('UserKnownHostsFile', '/dev/null')
-//    ->addSshOption('StrictHostKeyChecking', 'no')
     ->set('deploy_path', '/var/www/{{application}}');
-//inventory('deployment/hosts.yml');
-//host('test');
 
 // Tasks
-task('test', function () {
-    writeln('Hello world');
+task('upload', function () {
+    $skip_upload = [
+        '.',
+        '..',
+        '.env',
+        '.env.circleci',
+        '.env.example',
+        '.git',
+        '.gitignore',
+        '.gitattributes',
+        '.phpunit.result.cache',
+        '.editorconfig',
+        '.styleci.yml',
+        'deploy.php',
+        'README.md',
+
+        '.circleci',
+        'deployment',
+        'vendor',
+
+        'index.html',
+    ];
+
+    $to_upload = array_diff(scandir(__DIR__), $skip_upload);
+
+    foreach ($to_upload as $item) {
+        upload(__DIR__ . "/" . $item, '{{release_path}}');
+    }
+
 });
-task('pwd', function () {
-    $result = run('pwd');
-    writeln("Current dir: $result");
-});
-task('build', function () {
-    run('cd {{release_path}} && build');
-});
+
+task('deploy', [
+    'deploy:prepare',
+    'deploy:lock',
+    'deploy:release',
+    'upload',
+    'deploy:shared',
+    'deploy:vendors',
+    'deploy:writable',
+    'deploy:symlink',
+    'deploy:unlock',
+    'cleanup',
+    'success'
+]);
 
 // [Optional] if deploy fails automatically unlock.
 after('deploy:failed', 'deploy:unlock');
